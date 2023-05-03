@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Races</title>
+    <link rel="icon"
+          href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 128 128%22><text y=%221.2em%22 font-size=%2296%22>⚫️</text></svg>">
+    <script src="js/jquery-3.6.4.min.js"></script>
+
+    <style>
+        body {
+            background: black;
+            color: white;
+            padding: 50px;
+        }
+
+        .tabs .headers {
+            display: flex;
+            flex-direction: row;
+        }
+
+        .tabs .headers .tab-button {
+            padding: 10px 20px;
+            border: 2px solid white;
+            cursor: pointer;
+        }
+
+        .tabs .headers .tab-button.active {
+            background: white;
+            color: black;
+        }
+
+        .tabs .headers .tab-filler {
+            flex-grow: 10;
+        }
+
+        .tabs .content {
+            padding: 25px;
+            border-color: white;
+            border-style: solid;
+            border-top-style: none;
+        }
+
+        .tabs .content .card {
+            display: none;
+        }
+
+        .tabs .content .card.active {
+            display: block;
+        }
+
+        form, .wrapper {
+            display: flex;
+            flex-direction: column;
+            row-gap: 10px
+        }
+
+        label {
+            display: inline-block;
+            width: 180px;
+        }
+
+        table {
+            text-align: center;
+            margin-top: 30px;
+        }
+
+        th, td {
+            padding: 10px;
+            border: 1px solid white;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .loaded form {
+            margin-top: 15px;
+        }
+
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background-color: rgba(0,0,0,0.9);
+        }
+
+        .inner {
+            position: absolute;
+            padding: 30px;
+            width: 500px;
+            height: 300px;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        .close {
+            position: absolute;
+            top: 0;
+            right: 0;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+<h3>Races</h3>
+<div class="tabs">
+    <div class="headers">
+        <div class="tab-button active" onclick="activate(event, 'import')">Import</div>
+        <div class="tab-button" onclick="activate(event, 'races')">Races</div>
+        <div class="tab-button" onclick="activate(event, 'results')">Results</div>
+        <div class="tab-button" onclick="activate(event, 'edit')">Edit Result</div>
+        <div class="tab-button tab-filler"></div>
+    </div>
+    <div class="content" data-active="0">
+        <div class="card import active">
+
+            <!-- ---CARD IMPORT--- -->
+            <form>
+                <div>
+                    <label>Title</label>
+                    <input type="text" name="title">
+                </div>
+                <div>
+                    <label>Date</label>
+                    <input type="date" name="date">
+                </div>
+                <div>
+                    <label>CSV</label>
+                    <input type="file" name="file">
+                </div>
+                <div>
+                    <button type="button" onclick="importHandler()">Import</button>
+                </div>
+            </form>
+
+
+        </div>
+
+        <!-- ---CARD RACES--- -->
+        <div class="card races">
+            <form>
+                <div>
+                    <label>Filter by title</label>
+                    <input type="text" name="title">
+                </div>
+                <div>
+                    <label>Order by</label>
+                    <select name="order">
+                        <option value="title" selected>Title</option>
+                        <option value="date">Date</option>
+                        <option value="avg_time_medium">Medium avg time</option>
+                        <option value="avg_time_long">Long avg time</option>
+                    </select>
+                    <select name="direction">
+                        <option value="asc" selected>ASC</option>
+                        <option value="desc">DESC</option>
+                    </select>
+                </div>
+                <div>
+                    <button type="button" onclick="raceCollectionHandler()">Get Collection</button>
+                </div>
+            </form>
+            <table>
+                <thead>
+                <tr>
+                    <th>Title</th>
+                    <th>Date</th>
+                    <th>Medium distance average time</th>
+                    <th>Long distance average time</th>
+                </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+
+        <div class="card results wrapper">
+            <div class="loader">Getting races...</div>
+            <div class="empty hidden">No races found, import some data first</div>
+            <div class="loaded">
+                <label>Select race</label>
+                <select class="raceSelector"></select>
+                <button type="button" onclick="raceResultHandler()">Get Race Results</button>
+                <form>
+                    <div>
+                        <label>Filter by race full name</label>
+                        <input type="text" name="full_name">
+                    </div>
+                    <div>
+                        <label>Filter by distance</label>
+                        <select name="distance">
+                            <option value="" selected>All</option>
+                            <option value="medium">Medium</option>
+                            <option value="long">Long</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label>Filter by age category</label>
+                        <select name="age_category">
+                            <option value="" selected>All</option>
+                            <option value="M18-25">M18-25</option>
+                            <option value="M26-34">M26-34</option>
+                            <option value="M35-43">M35-43</option>
+                            <option value="F18-25">F18-25</option>
+                            <option value="F26-34">F26-34</option>
+                            <option value="F35-43">F35-43</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label>Order by</label>
+                        <select name="order">
+                            <option value="full_name" selected>Racer full name</option>
+                            <option value="time" selected>Finish time</option>
+                            <option value="distance">Distance</option>
+                            <option value="age_category">Age category</option>
+                            <option value="overall_placement">Overall place</option>
+                            <option value="category_placement">Age category place</option>
+                        </select>
+                        <select name="direction">
+                            <option value="asc" selected>ASC</option>
+                            <option value="desc">DESC</option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                    <tr>
+                        <th>Racer full name</th>
+                        <th>Finish time</th>
+                        <th>Distance</th>
+                        <th>Age category</th>
+                        <th>Overall place</th>
+                        <th>Age category place</th>
+                    </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="card edit wrapper">
+            <div>
+                <label>Select race</label>
+                <select class="raceSelector"></select>
+                <button type="button" onclick="raceResulEditHandler()">Get Race Results</button>
+            </div>
+            <table>
+                <thead>
+                <tr>
+                    <th>Racer full name</th>
+                    <th>Finish time</th>
+                    <th>Distance</th>
+                    <th>Age category</th>
+                    <th>Actions</th>
+                </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+
+    </div>
+</div>
+<div class="modal hidden">
+    <div class="inner">
+        <input type="hidden" name="id">
+        <form>
+            <div>
+                <label>Full name</label>
+                <input type="text" name="full_name">
+            </div>
+            <div>
+                <label>Time</label>
+                <input type="text" name="time">
+            </div>
+            <div>
+                <label>Distance</label>
+                <select name="distance">
+                    <option value="medium">Medium</option>
+                    <option value="long">Long</option>
+                </select>
+            </div>
+            <div>
+                <label>Age category</label>
+                <select name="age_category">
+                    <option value="M18-25">M18-25</option>
+                    <option value="M26-34">M26-34</option>
+                    <option value="M35-43">M35-43</option>
+                    <option value="F18-25">F18-25</option>
+                    <option value="F26-34">F26-34</option>
+                    <option value="F35-43">F35-43</option>
+                </select>
+            </div>
+            <div>
+                <button type="button" onclick="editRaceResult()">Submit</button>
+            </div>
+        </form>
+        <div class="close">
+            <button type="button" onclick="closeModal()">X</button>
+        </div>
+    </div>
+</div>
+
+<script>
+
+    $(function () {
+        //prevent normal form submit
+        $('form').submit(function (e) {
+            e.preventDefault();
+        });
+
+        //get initial data
+        getRaces();
+    });
+
+    function activate(event, tab) {
+        if (event.currentTarget.classList.contains('active')) {
+            return;
+        }
+        $('.tab-button.active').removeClass('active');
+        event.currentTarget.classList.add('active');
+        $('.card.active').removeClass('active');
+        $('.card.' + tab).addClass('active');
+    }
+
+    function importHandler() {
+        let formData = new FormData($('.import form')[0]);
+
+        if (formData.get('title') && formData.get('date') && formData.get('file')) {
+
+            $.ajax({
+                type: 'POST',
+                url: 'race/import',
+                contentType: false,
+                processData: false,
+                data: formData,
+                success: function (data, textStatus, jqXHR) {
+                    alert('Race results successfully imported.');
+                    $(':input', '.import form')
+                        .not(':button')
+                        .val('');
+                    getRaces();
+                },
+                error: function (jqXHR, textStatus, errorThrown) {
+                    alert('Import has failed.')
+                }
+            });
+        } else {
+            alert('All fields are required');
+        }
+    }
+
+    function raceCollectionHandler() {
+        const params = [];
+        $('.races form').serializeArray().forEach(function (item) {
+            params.push(item.name + "=" + item.value);
+        });
+        $.ajax({
+            type: 'GET',
+            url: 'race/collection?' + params.join('&'),
+            dataType: 'json',
+            contentType: 'application/json',
+            success: function (data, textStatus, jqXHR) {
+                const $table = $('.races table tbody');
+                $table.empty();
+                for (let row of data) {
+                    $table.append($('<tr>'
+                        + '<td>' + row.title + '</td>'
+                        + '<td>' + (new Date(row.date)).toLocaleDateString() + '</td>'
+                        + '<td>' + row.avg_time_medium + '</td>'
+                        + '<td>' + row.avg_time_long + '</td>'
+                        + '</tr>'));
+                }
+            },
+            error: function (jqXHR, textStatus, errorThrown) {
+                alert('There was an error');
+            }
+        });
+    }
+
+    function getRaces() {
+        onRacesLoading();
+
+        $.ajax({
+            type: 'GET',
+            url: 'race/all',
+            dataType: 'json',
+            contentType: 'application/json',
+            success: function (data, textStatus, jqXHR) {
+                const $select = $('.raceSelector');
+                $select.empty();
+
+                for (let row of data) {
+                    $select.append($('<option value="' + row.id + '">' + row.title + '</option>'));
+                }
+
+                data.length === 0 ? onNoRaces() : onRacesLoaded();
+            },
+            error: function (jqXHR, textStatus, errorThrown) {
+                console.log('There was an error getting races');
+            }
+        });
+    }
+
+    function onRacesLoading() {
+        $('.results > div').addClass('hidden');
+        $('.results .loader').removeClass('hidden');
+    }
+
+    function onNoRaces() {
+        $('.results .loader').addClass('hidden');
+        $('.results .empty').removeClass('hidden');
+    }
+
+    function onRacesLoaded() {
+        $('.results .loader').addClass('hidden');
+        $('.results .loaded').removeClass('hidden');
+    }
+
+    function onResultsLoaded() {
+        $('.results .table-wrapper').removeClass('hidden');
+    }
+
+    function raceResultHandler() {
+        const params = [];
+        $('.results form').serializeArray().forEach(function (item) {
+            params.push(item.name + "=" + item.value);
+        });
+
+        const raceId = $('.results .raceSelector option:selected').val();
+        if (!raceId) {
+            return;
+        }
+
+        $.ajax({
+            type: 'GET',
+            url: 'race/results/' + raceId + '?' + params.join('&'),
+            dataType: 'json',
+            contentType: 'application/json',
+            success: function (data, textStatus, jqXHR) {
+                const $table = $('.results table tbody');
+                $table.empty();
+                for (let row of data) {
+                    $table.append($('<tr>'
+                        + '<td>' + row.full_name + '</td>'
+                        + '<td>' + row.time + '</td>'
+                        + '<td>' + row.distance + '</td>'
+                        + '<td>' + row.age_category + '</td>'
+                        + '<td>' + (row.overall_placement || '') + '</td>'
+                        + '<td>' + (row.category_placement || '') + '</td>'
+                        + '</tr>'));
+                }
+
+                onResultsLoaded();
+            },
+            error: function (jqXHR, textStatus, errorThrown) {
+                alert('There was an error');
+            }
+        });
+    }
+
+    function raceResulEditHandler() {
+        const raceId = $('.edit .raceSelector option:selected').val();
+        if (!raceId) {
+            return;
+        }
+
+        $.ajax({
+            type: 'GET',
+            url: 'race/results-ids/' + raceId,
+            dataType: 'json',
+            contentType: 'application/json',
+            success: function (data, textStatus, jqXHR) {
+                const $table = $('.edit table tbody');
+                $table.empty();
+                const $modal = $('.modal');
+
+                for (let row of data) {
+
+                    $link = $('<a data-id="' + row.id + '" href=#>Edit</a>');
+                    $link.on('click', function (e) {
+                        e.preventDefault();
+                        $modal.find('input[name="id"]').val(row.id);
+                        $modal.find('input[name="full_name"]').val(row.full_name);
+                        $modal.find('input[name="time"]').val(row.time);
+                        $modal.find('input[name="distance"]').val(row.distance);
+                        $modal.find('input[name="age_category"]').val(row.age_category);
+                        $modal.removeClass('hidden');
+                    });
+
+                    $table.append($('<tr>'
+                        + '<td>' + row.full_name + '</td>'
+                        + '<td>' + row.time + '</td>'
+                        + '<td>' + row.distance + '</td>'
+                        + '<td>' + row.age_category + '</td>'
+                        + '</tr>').append($('<td></td>').append($link)));
+                }
+            },
+            error: function (jqXHR, textStatus, errorThrown) {
+                alert('There was an error');
+            }
+        });
+    }
+
+    function closeModal() {
+        $('.modal').addClass('hidden');
+    }
+
+    function editRaceResult() {
+        const raceResultId = $('.modal input[name="id"]').val();
+        if (!raceResultId) {
+            return;
+        }
+
+        const payload = {};
+        $('.modal form').serializeArray().forEach(function (item) {
+            payload[item.name] = item.value;
+        });
+
+        $.ajax({
+            type: 'POST',
+            url: 'race/edit-result/' + raceResultId,
+            dataType: 'json',
+            contentType: 'application/json',
+            data: JSON.stringify(payload),
+            success: function (data, textStatus, jqXHR) {
+                const $columns = $('.edit table a[data-id="' + raceResultId + '"]').closest('tr').find('td');
+                $columns.get(0).innerHTML = payload.full_name;
+                $columns.get(1).innerHTML = payload.time;
+                $columns.get(2).innerHTML = payload.distance;
+                $columns.get(3).innerHTML = payload.age_category;
+                closeModal();
+                getRaces();
+            },
+            error: function (jqXHR, textStatus, errorThrown) {
+                alert('There was an error');
+            }
+        });
+    }
+</script>
+
+</body>
+</html>
