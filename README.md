@@ -1,5 +1,7 @@
 # races
 
+Assignment instructions and test data can be found in docs folder.
+
 Setup:
 
 1. create a database
