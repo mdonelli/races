@@ -84,8 +84,6 @@ class RaceService
             $this->entityManager->persist($race);
             $this->entityManager->flush();
 
-            $raceRef = $this->entityManager->getReference(Race::class, $race->getId());
-
             $handle = fopen($filePath, 'r');
             if (!$handle) {
                 return false;
@@ -101,7 +99,7 @@ class RaceService
                 $raceResult->setDistance($values[1]);
                 $raceResult->setTime(new \DateTime($values[2]));
                 $raceResult->setAgeCategory($values[3]);
-                $raceResult->setRace($raceRef);
+                $raceResult->setRace($race);
                 $this->entityManager->persist($raceResult);
                 $counter++;
 
@@ -109,6 +107,8 @@ class RaceService
                 if ($counter == self::MAX_RESULTS) {
                     $this->entityManager->flush();
                     $this->entityManager->clear();
+                    //get race ref after clear
+                    $race = $this->entityManager->getReference(Race::class, $race->getId());
                 }
             }
 
